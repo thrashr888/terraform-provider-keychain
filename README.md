@@ -1,8 +1,7 @@
 
 ## Example
 
-```terraform
-
+```tf
 resource "keychain" "test-ssid" {
   service     = "AirPort"
   account     = "ssid name"
@@ -10,7 +9,6 @@ resource "keychain" "test-ssid" {
   data        = "wifi password"
   description = "test description"
 }
-
 ```
 
 ## Testing
