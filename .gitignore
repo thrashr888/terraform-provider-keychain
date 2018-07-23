@@ -3,3 +3,4 @@ tf.plan
 .terraform
 .terraform.tfstate*
 terraform.tfstate*
+crash.log

@@ -19,7 +19,7 @@ func resourceKeychain() *schema.Resource {
 			// Where
 			"service": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
+				Optional:    true,
 				Default:     "AirPort",
 				Description: "The type of service - Where",
 			},
@@ -32,7 +32,7 @@ func resourceKeychain() *schema.Resource {
 			// Name | SSID
 			"label": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
+				Optional:    true,
 				Description: "The record label - Name / SSID",
 			},
 			// Password
@@ -41,21 +41,22 @@ func resourceKeychain() *schema.Resource {
 				Required:    true,
 				Description: "The password - Password",
 			},
-			// Comments
+			// Kind
 			"description": &schema.Schema{
 				Type:        schema.TypeString,
-				Required:    false,
-				Description: "A helpful description - Comments",
+				Optional:    true,
+				Default:     "AirPort network password",
+				Description: "A helpful description - Kind",
 			},
 			"synchronizable": &schema.Schema{
 				Type:        schema.TypeBool,
-				Required:    false,
+				Optional:    true,
 				Default:     true,
 				Description: "Should this sync across devices?",
 			},
 			"accessible": &schema.Schema{
 				Type:        schema.TypeBool,
-				Required:    false,
+				Optional:    true,
 				Default:     true,
 				Description: "The lock setting",
 			},
@@ -73,6 +74,9 @@ func resourceKeychainCreate(d *schema.ResourceData, meta interface{}) error {
 	label := d.Get("label").(string)
 	data := d.Get("data").(string)
 	description := d.Get("description").(string)
+	// TODO:
+	// accessible := d.Get("accessible").(bool)
+	// synchronizable := d.Get("synchronizable").(bool)
 
 	err := addItem(service, account, label, data, description)
 
@@ -107,7 +111,11 @@ func resourceKeychainRead(d *schema.ResourceData, meta interface{}) error {
 
 	obj := results[0]
 
-	updateDataFromItem(obj, d)
+	d.Set("service", obj.Service)
+	d.Set("account", obj.Account)
+	d.Set("label", obj.Label)
+	d.Set("data", obj.Data)
+	d.Set("description", obj.Description)
 
 	return nil
 }
@@ -142,8 +150,7 @@ func resourceKeychainDelete(d *schema.ResourceData, meta interface{}) error {
 func resourceKeychainExists(d *schema.ResourceData, meta interface{}) (bool, error) {
 	results, err := queryByID(d.Id())
 
-	// If the resource does not exist, inform Terraform. We want to immediately
-	// return here to prevent further processing.
+	// If the resource does not exist, inform Terraform
 	if err != nil {
 		// Error
 		return false, err
@@ -174,13 +181,6 @@ func queryItem(service string, account string) ([]keychain.QueryResult, error) {
 
 func queryByID(id string) ([]keychain.QueryResult, error) {
 	return queryItem(getID(id))
-}
-
-func updateItem(service string, account string, oldService string, oldAccount string) error {
-	queryItem := newItem(oldService, oldAccount, "", "", "")
-	updateItem := newItem(service, account, "", "", "")
-	err := keychain.UpdateItem(queryItem, updateItem)
-	return err
 }
 
 func deleteItem(service string, account string) error {
@@ -220,18 +220,11 @@ func newItem(service string, account string, label string, data string, descript
 	item.SetSynchronizable(keychain.SynchronizableNo)
 	item.SetAccessible(keychain.AccessibleWhenUnlocked)
 
+	trustedApplications := []string{"/usr/libexec/airportd"}
+	item.SetAccess(&keychain.Access{Label: "AirPort", TrustedApplications: trustedApplications})
+
 	return item
 }
-
-// func newItemFromData(d *schema.ResourceData) keychain.Item {
-// 	service := d.Get("service").(string)
-// 	account := d.Get("account").(string)
-// 	label := d.Get("label").(string)
-// 	data := d.Get("data").(string)
-// 	description := d.Get("description").(string)
-
-// 	return newItem(service, account, label, data, description)
-// }
 
 func updateDataFromItem(obj keychain.QueryResult, d *schema.ResourceData) {
 	d.Set("service", obj.Service)
@@ -252,11 +245,11 @@ func createID(service string, account string) string {
 }
 
 func getID(id string) (string, string) {
-	var parts map[string]interface{}
+	var parts []string
 
 	if err := json.Unmarshal([]byte(id), &parts); err != nil {
 		panic(err)
 	}
 
-	return parts["0"].(string), parts["1"].(string)
+	return parts[0], parts[1]
 }

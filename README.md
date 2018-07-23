@@ -1,7 +1,10 @@
+# Terraform Provider Keychain
+
+This provider is used to manage the local macOS Keychain. Ideal for syncing a set of application or wifi passwords.
 
 ## Example
 
-```tf
+```hcl
 resource "keychain" "test-ssid" {
   service     = "AirPort"
   account     = "ssid name"
