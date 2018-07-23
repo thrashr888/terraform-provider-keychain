@@ -6,11 +6,8 @@ This provider is used to manage the local macOS Keychain. Ideal for syncing a se
 
 ```hcl
 resource "keychain" "test-ssid" {
-  service     = "AirPort"
-  account     = "ssid name"
-  label       = "ssid name"
-  data        = "wifi password"
-  description = "test description"
+  account = "ssid name"
+  data    = "wifi password"
 }
 ```
 
