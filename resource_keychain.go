@@ -2,10 +2,15 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	keychain "github.com/keybase/go-keychain"
 )
+
+//
+// Setup
+//
 
 func resourceKeychain() *schema.Resource {
 	return &schema.Resource{
@@ -21,7 +26,7 @@ func resourceKeychain() *schema.Resource {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Default:     "AirPort",
-				Description: "The type of service - Where",
+				Description: "The type of service (default is `Airport`) - Where",
 			},
 			// Account | SSID
 			"account": &schema.Schema{
@@ -29,11 +34,17 @@ func resourceKeychain() *schema.Resource {
 				Required:    true,
 				Description: "The account name - Account / SSID",
 			},
+			"access-group": &schema.Schema{
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "AirPort",
+				Description: "The access group name (default is `Airport`)",
+			},
 			// Name | SSID
 			"label": &schema.Schema{
 				Type:        schema.TypeString,
-				Optional:    true,
-				Description: "The record label - Name / SSID",
+				Required:    true,
+				Description: "The record's label (defaults to using the Account name) - Name / SSID",
 			},
 			// Password
 			"data": &schema.Schema{
@@ -52,13 +63,13 @@ func resourceKeychain() *schema.Resource {
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
-				Description: "Should this sync across devices?",
+				Description: "Should this sync across devices? (default is `true`)",
 			},
 			"accessible": &schema.Schema{
 				Type:        schema.TypeBool,
 				Optional:    true,
 				Default:     true,
-				Description: "The lock setting",
+				Description: "The lock setting (default is `true`)",
 			},
 		},
 	}
@@ -75,6 +86,7 @@ func resourceKeychainCreate(d *schema.ResourceData, meta interface{}) error {
 	data := d.Get("data").(string)
 	description := d.Get("description").(string)
 	// TODO:
+	// accessGroup := d.Get("access-group").(string)
 	// accessible := d.Get("accessible").(bool)
 	// synchronizable := d.Get("synchronizable").(bool)
 
@@ -95,7 +107,20 @@ func resourceKeychainCreate(d *schema.ResourceData, meta interface{}) error {
 }
 
 func resourceKeychainRead(d *schema.ResourceData, meta interface{}) error {
-	results, err := queryByID(d.Id())
+
+	// get by id or service & account
+	id := d.Id()
+	service := ""
+	account := ""
+
+	if id != "" {
+		service, account = getID(id)
+	} else {
+		service = d.Get("service").(string)
+		account = d.Get("account").(string)
+	}
+
+	results, err := queryItem(service, account)
 
 	// If the resource does not exist, inform Terraform. We want to immediately
 	// return here to prevent further processing.
@@ -113,7 +138,11 @@ func resourceKeychainRead(d *schema.ResourceData, meta interface{}) error {
 
 	d.Set("service", obj.Service)
 	d.Set("account", obj.Account)
-	d.Set("label", obj.Label)
+	if obj.Label == "" {
+		d.Set("label", obj.Account)
+	} else {
+		d.Set("label", obj.Label)
+	}
 	d.Set("data", obj.Data)
 	d.Set("description", obj.Description)
 
@@ -176,11 +205,13 @@ func queryItem(service string, account string) ([]keychain.QueryResult, error) {
 	queryItem := newItem(service, account, "", "", "")
 	queryItem.SetMatchLimit(keychain.MatchLimitOne)
 	queryItem.SetReturnData(true)
+	queryItem.SetReturnAttributes(true)
 	return keychain.QueryItem(queryItem)
 }
 
 func queryByID(id string) ([]keychain.QueryResult, error) {
-	return queryItem(getID(id))
+	service, account := getID(id)
+	return queryItem(service, account)
 }
 
 func deleteItem(service string, account string) error {
@@ -226,14 +257,6 @@ func newItem(service string, account string, label string, data string, descript
 	return item
 }
 
-func updateDataFromItem(obj keychain.QueryResult, d *schema.ResourceData) {
-	d.Set("service", obj.Service)
-	d.Set("account", obj.Account)
-	d.Set("label", obj.Label)
-	d.Set("data", obj.Data)
-	d.Set("description", obj.Description)
-}
-
 //
 // ID Generation
 //
@@ -249,6 +272,7 @@ func getID(id string) (string, string) {
 
 	if err := json.Unmarshal([]byte(id), &parts); err != nil {
 		panic(err)
+		fmt.Printf("Parts missing: %v", id)
 	}
 
 	return parts[0], parts[1]

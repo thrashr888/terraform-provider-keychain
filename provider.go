@@ -10,5 +10,8 @@ func Provider() *schema.Provider {
 		ResourcesMap: map[string]*schema.Resource{
 			"keychain": resourceKeychain(),
 		},
+		DataSourcesMap: map[string]*schema.Resource{
+			"keychain": dataSourceKeychain(),
+		},
 	}
 }
