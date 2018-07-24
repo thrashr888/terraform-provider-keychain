@@ -4,6 +4,7 @@ This provider is used to manage the local macOS Keychain. Ideal for syncing a se
 
 Note that this is **macOS only**!
 
+
 ## Example
 
 See [test.tf](./test.tf) for more examples.
@@ -19,6 +20,7 @@ resource "keychain" "test_ssid" {
   data    = "My wifi password"
 }
 ```
+
 
 ## Testing
 
@@ -37,3 +39,11 @@ $ terraform plan
 $ terraform apply
 ```
 
+
+## TODO
+
+- [ ] Make the data source usable
+- [ ] Allow the data source to return multiple items
+- [ ] Add a separate provider for wifi passwords
+- [ ] Add API docs
+- [ ] Add instructions on using with Terraform
