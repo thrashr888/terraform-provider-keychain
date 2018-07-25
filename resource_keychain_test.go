@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 )
 
@@ -23,20 +22,20 @@ func TestGetID(t *testing.T) {
 	}
 }
 
-func TestQueryItem(t *testing.T) {
-	items, err := queryItem("AirPort", "SSID name 1")
+// func TestQueryItem(t *testing.T) {
+// 	items, err := queryItem("AirPort", "SSID name 1")
 
-	if err != nil {
-		t.Errorf("queryItem errored, got: %s", err)
-	}
+// 	if err != nil {
+// 		t.Errorf("queryItem errored, got: %s", err)
+// 	}
 
-	item := items[0]
-	fmt.Printf("Item: %#v\n", item)
+// 	item := items[0]
+// 	fmt.Printf("Item: %#v\n", item)
 
-	fmt.Printf("Service: %s\n", item.Service)
-	fmt.Printf("Account: %s\n", item.Account)
-	fmt.Printf("AccessGroup: %s\n", item.AccessGroup)
-	fmt.Printf("Label: %s\n", item.Label)
-	fmt.Printf("Description: %s\n", item.Description)
-	fmt.Printf("Data: %s\n", item.Data)
-}
+// 	fmt.Printf("Service: %s\n", item.Service)
+// 	fmt.Printf("Account: %s\n", item.Account)
+// 	fmt.Printf("AccessGroup: %s\n", item.AccessGroup)
+// 	fmt.Printf("Label: %s\n", item.Label)
+// 	fmt.Printf("Description: %s\n", item.Description)
+// 	fmt.Printf("Data: %s\n", item.Data)
+// }
