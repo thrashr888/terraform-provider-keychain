@@ -13,26 +13,9 @@ Note that this is **macOS only**!
 -	[Go](https://golang.org/doc/install) 1.8 (to build the provider plugin)
 
 
-## Building The Provider
+## Usage
 
-Clone repository to: `$GOPATH/src/github.com/thrashr888/terraform-provider-keychain`
-
-```sh
-$ mkdir -p $GOPATH/src/github.com/thrashr888; cd $GOPATH/src/github.com/thrashr888
-$ git clone git@github.com:thrashr888/terraform-provider-keychain
-```
-
-Enter the provider directory and build the provider
-
-```sh
-$ cd $GOPATH/src/github.com/thrashr888/terraform-provider-keychain
-$ go install
-```
-
-
-## Example
-
-See [test.tf](./test.tf) for more examples.
+See [test.tf](./test.tf) for more examples. There is no Provider required.
 
 ```hcl
 data "keychain" "test_ssid_name" {
@@ -47,43 +30,57 @@ resource "keychain" "test_ssid" {
 ```
 
 
+## Building The Provider
+
+Clone repository to: `$GOPATH/src/github.com/thrashr888/terraform-provider-keychain`
+
+```sh
+$ mkdir -p $GOPATH/src/github.com/thrashr888; cd $GOPATH/src/github.com/thrashr888
+$ git clone git@github.com:thrashr888/terraform-provider-keychain
+```
+
+Enter the provider directory and build the provider
+
+```sh
+$ cd $GOPATH/src/github.com/thrashr888/terraform-provider-keychain
+$ make build
+```
+
+
 ## Developing the Provider
 
 If you wish to work on the provider, you'll first need [Go](http://www.golang.org) installed on your machine (version 1.8+ is *required*). You'll also need to correctly setup a [GOPATH](http://golang.org/doc/code.html#GOPATH), as well as adding `$GOPATH/bin` to your `$PATH`.
 
-To compile the provider, run `go install`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
+To compile the provider, run `make build`. This will build the provider and put the provider binary in the `$GOPATH/bin` directory.
 
 ```sh
-$ go install
+$ make install
 ...
 $ $GOPATH/bin/terraform-provider-keychain
 ...
 ```
 
+In order to test the provider, you can simply run `make test`.
 
-## Testing
-
-Current test suite is minimal:
-
-```
-$ go test
+```sh
+$ make test
 ```
 
-Trying out the provider using `test.tf`:
+In order to run the full suite of Acceptance tests, run `make testacc`.
 
-```
-$ go build -o terraform-provider-keychain
-$ terraform init
-$ terraform plan
-$ terraform apply
+*Note:* Acceptance tests create real resources, and often cost money to run.
+
+```sh
+$ make testacc
 ```
 
 
 ## TODO
 
 - [ ] Make the data source usable
-- [ ] Allow the data source to return multiple items (??? might not want to)
+- [X] ~Allow the data source to return multiple items (??? might not want to)~
 - [ ] Add a separate provider for specifically wifi passwords
+- [X] Update the build & README according to the Terraform Provider Template
 - [X] Add API docs
 - [X] Add instructions on using with Terraform
 - [X] Add travis config
