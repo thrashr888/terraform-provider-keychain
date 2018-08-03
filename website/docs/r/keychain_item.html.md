@@ -1,22 +1,23 @@
 ---
 layout: "keychain"
-page_title: "keychain: keychain"
-sidebar_current: "docs-keychain-resource-keychain"
+page_title: "keychain: keychain_item"
+sidebar_current: "docs-keychain-resource-keychain-item"
 description: |-
-  Provides a macOS keychain resource.
+  Provides a macOS keychain item resource.
 ---
 
 # keychain
 
-Provides a macOS keychain resource. This sits in front of a number of defined pools of origins and provides various options for geographically-aware load balancing. Note that the load balancing feature must be enabled in your Clouflare account before you can use this resource.
+Provides a macOS keychain resource.
 
 ## Example Usage
 
 ```hcl
-resource "keychain" "test_ssid_1" {
-  label   = "SSID Name 1"
-  account = "SSID Name 1"
-  data    = "WiFi Password 1"
+resource "keychain_item" "test_key_1" {
+  service = "Key Service 1"
+  label   = "Key Name 1"
+  account = "Key Name 1"
+  data    = "Key Password 1"
 }
 ```
 
@@ -24,7 +25,7 @@ resource "keychain" "test_ssid_1" {
 
 The following arguments are supported:
 
-* `service` - (Optional) The key's service name or "Where".
+* `service` - (Required) The key's service name or "Where".
 * `account` - (Required) The key's account name or "Account".
 * `label` - (Required) The key's label or "Name".
 * `data` - (Required) The key's data or "password".

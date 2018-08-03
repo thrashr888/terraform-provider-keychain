@@ -1,7 +1,7 @@
 ---
 layout: "keychain"
-page_title: "keychain: keychain"
-sidebar_current: "docs-keychain-datasource-keychain
+page_title: "keychain: keychain_item"
+sidebar_current: "docs-keychain-datasource-keychain-item
 description: |-
   Get a keychain item by service and account names.
 ---
@@ -13,14 +13,15 @@ Use this data source to get a [keychain item][1], likely containing a password o
 ## Example Usage
 
 ```hcl
-data "keychain" "account-key" {
+data "keychain_item" "account-key" {
   service = "My Service"
   account = "${var.service_username}"
 }
 
-provider "my_service" {
-  username = "${var.service_username}"
-  password = "${data.keychain.account-key.data}"
+provider "keychain_item" "my-service" {
+  service = "My Second Service"
+  account = "${var.service_username}"
+  data = "${data.keychain.account-key.data}"
 }
 ```
 

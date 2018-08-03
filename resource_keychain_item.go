@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 
 	"github.com/hashicorp/terraform/helper/schema"
 	keychain "github.com/keybase/go-keychain"
@@ -12,7 +13,9 @@ import (
 // Setup
 //
 
-func resourceKeychain() *schema.Resource {
+var accessGroup = "apple"
+
+func resourceKeychainItem() *schema.Resource {
 	return &schema.Resource{
 		Create: resourceKeychainCreate,
 		Read:   resourceKeychainRead,
@@ -25,26 +28,26 @@ func resourceKeychain() *schema.Resource {
 			"service": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "AirPort",
-				Description: "The type of service (default is `Airport`) - Where",
+				Default:     "",
+				Description: "The type of service - Where",
 			},
-			// Account | SSID
+			// Account
 			"account": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The account name - Account / SSID",
+				Description: "The account name - Account",
 			},
 			"access-group": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "AirPort",
-				Description: "The access group name (default is `Airport`)",
+				Default:     "",
+				Description: "The access group name",
 			},
-			// Name | SSID
+			// Name
 			"label": &schema.Schema{
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "The record's label (defaults to using the Account name) - Name / SSID",
+				Description: "The record's label (defaults to using the Account name) - Name",
 			},
 			// Password
 			"data": &schema.Schema{
@@ -56,7 +59,7 @@ func resourceKeychain() *schema.Resource {
 			"description": &schema.Schema{
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "AirPort network password",
+				Default:     "",
 				Description: "A helpful description - Kind",
 			},
 			"synchronizable": &schema.Schema{
@@ -120,6 +123,7 @@ func resourceKeychainRead(d *schema.ResourceData, meta interface{}) error {
 		account = d.Get("account").(string)
 	}
 
+	log.Printf("[DEBUG] querying keychain items for %s:%s", service, account)
 	results, err := queryItem(service, account)
 
 	// If the resource does not exist, inform Terraform. We want to immediately
@@ -127,24 +131,41 @@ func resourceKeychainRead(d *schema.ResourceData, meta interface{}) error {
 	if err != nil {
 		// Error
 		d.SetId("")
-		return nil
+		return fmt.Errorf("Error getting keychain item: %s", err)
+		// return nil
 	} else if len(results) != 1 {
 		// Not found
 		d.SetId("")
-		return nil
+		return fmt.Errorf("Keychain item not found at [%s, %s] => %s", service, account, results)
+		// return nil
 	}
 
 	obj := results[0]
 
-	d.Set("service", obj.Service)
-	d.Set("account", obj.Account)
-	if obj.Label == "" {
-		d.Set("label", obj.Account)
-	} else {
-		d.Set("label", obj.Label)
+	if err := d.Set("service", obj.Service); err != nil {
+		return fmt.Errorf("Error setting service name: %s", err)
 	}
-	d.Set("data", obj.Data)
-	d.Set("description", obj.Description)
+	if err := d.Set("account", obj.Account); err != nil {
+		return fmt.Errorf("Error setting account name: %s", err)
+	}
+	if err := d.Set("data", string(obj.Data)); err != nil {
+		return fmt.Errorf("Error setting data: %s", err)
+	}
+	if obj.Description != "" {
+		if err := d.Set("description", obj.Description); err != nil {
+			return fmt.Errorf("Error setting description: %s, %v", err, obj.Description)
+		}
+	}
+
+	if obj.Label == "" {
+		if err := d.Set("label", obj.Account); err != nil {
+			return fmt.Errorf("Error setting label to account name: %s", err)
+		}
+	} else {
+		if err := d.Set("label", obj.Label); err != nil {
+			return fmt.Errorf("Error setting label to label name: %s, %v, %v", err, obj.Label, d)
+		}
+	}
 
 	return nil
 }
@@ -202,10 +223,16 @@ func addItem(service string, account string, label string, data string, descript
 }
 
 func queryItem(service string, account string) ([]keychain.QueryResult, error) {
-	queryItem := newItem(service, account, "", "", "")
+	queryItem := keychain.NewItem()
+	queryItem.SetSecClass(keychain.SecClassGenericPassword)
+	queryItem.SetService(service)
+	queryItem.SetAccount(account)
+	queryItem.SetAccessGroup(accessGroup)
+
 	queryItem.SetMatchLimit(keychain.MatchLimitOne)
 	queryItem.SetReturnData(true)
 	queryItem.SetReturnAttributes(true)
+	// return nil, fmt.Errorf("%s", queryItem)
 	return keychain.QueryItem(queryItem)
 }
 
@@ -215,7 +242,10 @@ func queryByID(id string) ([]keychain.QueryResult, error) {
 }
 
 func deleteItem(service string, account string) error {
-	item := newItem(service, account, "", "", "")
+	item := keychain.NewItem()
+	item.SetSecClass(keychain.SecClassGenericPassword)
+	item.SetService(service)
+	item.SetAccount(account)
 	err := keychain.DeleteItem(item)
 	return err
 }
@@ -234,7 +264,7 @@ func newItem(service string, account string, label string, data string, descript
 	item.SetSecClass(keychain.SecClassGenericPassword)
 	item.SetService(service)
 	item.SetAccount(account)
-	item.SetAccessGroup("AirPort")
+	item.SetAccessGroup(accessGroup) // TODO: make this not AirPort
 
 	if label != "" {
 		item.SetLabel(label)
@@ -250,6 +280,12 @@ func newItem(service string, account string, label string, data string, descript
 
 	item.SetSynchronizable(keychain.SynchronizableNo)
 	item.SetAccessible(keychain.AccessibleWhenUnlocked)
+
+	// item.SetSynchronizable(keychain.SynchronizableDefault)
+	// item.SetAccessible(keychain.AccessibleDefault)
+
+	// item.SetSynchronizable(keychain.SynchronizableAny)
+	// item.SetAccessible(keychain.AccessibleAlways)
 
 	trustedApplications := []string{"/usr/libexec/airportd"}
 	item.SetAccess(&keychain.Access{Label: "AirPort", TrustedApplications: trustedApplications})
@@ -271,7 +307,6 @@ func getID(id string) (string, string) {
 	var parts []string
 
 	if err := json.Unmarshal([]byte(id), &parts); err != nil {
-		panic(err)
 		fmt.Printf("Parts missing: %v", id)
 	}
 

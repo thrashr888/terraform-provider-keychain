@@ -18,12 +18,22 @@ Note that this is **macOS only**!
 See [test.tf](./test.tf) for more examples. There is no Provider required.
 
 ```hcl
-data "keychain" "test_ssid_name" {
-  service = "AirPort"
+data "keychain_item" "test_key_name" {
+  service = "MY_SERVICE"
+  account = "An key name"
+}
+
+resource "keychain_item" "test_key" {
+  service = "MY_SERVICE"
+  account = "A key name"
+  data    = "My key password"
+}
+
+data "keychain_wifi" "test_ssid_name" {
   account = "An ssid name"
 }
 
-resource "keychain" "test_ssid" {
+resource "keychain_wifi" "test_ssid" {
   account = "A ssid name"
   data    = "My wifi password"
 }
@@ -79,7 +89,7 @@ $ make testacc
 
 - [ ] Make the data source usable
 - [X] ~Allow the data source to return multiple items (??? might not want to)~
-- [ ] Add a separate provider for specifically wifi passwords
+- [X] Add a separate provider for specifically wifi passwords
 - [X] Update the build & README according to the Terraform Provider Template
 - [X] Add API docs
 - [X] Add instructions on using with Terraform
